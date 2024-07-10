@@ -1,6 +1,8 @@
 # VUTestingTools
 
 An attempt to make VU/RM stability easier to quantify.
+It opens your local VU Server and Client and automatically connects your client when stdOut says server is ready.
+Branches will have more detailed logic (looping, logging)
 
 # Required Language/Packages
 
