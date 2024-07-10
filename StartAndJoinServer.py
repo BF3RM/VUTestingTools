@@ -23,7 +23,7 @@ class RMError(Enum):
 TIME_FOR_SERVER_LOG_TO_POP_UP = 3
 TIME_FOR_LOADING_INTO_NEXT_MAP = 30
 TIME_FOR_DRM_MODULE_ERROR = 3
-NUMBER_OF_TESTS = 1
+NUMBER_OF_TESTS = 30
 NUMBER_OF_TESTS_ZERO_INDEXED = NUMBER_OF_TESTS - 1
 
 
@@ -54,15 +54,26 @@ def can_run_program():
   return True
 
 def safe_shutdown(fileObject, serverProcess, clientProcess, currentTestIndexString):
-   if currentTestIndexString == str(NUMBER_OF_TESTS_ZERO_INDEXED):
-      print(currentTestIndexString + ": Client success. Final test complete.\n")
-   else:
-      print(currentTestIndexString + ": Client success. Moving to next test iteration...\n")
+   if clientProcess.poll() is None:
+      if currentTestIndexString == str(NUMBER_OF_TESTS_ZERO_INDEXED):
+         print(currentTestIndexString + ": Client success. Final test complete.\n")
+      else:
+         print(currentTestIndexString + ": Client success. Moving to next test iteration...\n")
 
-   fileObject.write(currentTestIndexString + ": Client Success\n")
-   fileObject.close()
-   serverProcess.kill()
-   clientProcess.kill()
+      fileObject.write(currentTestIndexString + ": Client Success\n")
+      fileObject.close()
+      serverProcess.kill()
+      clientProcess.kill()
+   else: 
+      if currentTestIndexString == str(NUMBER_OF_TESTS_ZERO_INDEXED):
+         print(currentTestIndexString + ": Client crashed with VU Dialog. Final test complete.\n")
+      else:
+         print(currentTestIndexString + ": Client crashed with VU Dialog. Moving to next test iteration...\n")
+
+      fileObject.write(currentTestIndexString + ": Client crashed with VU Dialog\n")
+      fileObject.close()
+      serverProcess.kill()
+      clientProcess.kill()
    return
    
 def server_failed_to_start(fileObject, serverProcess, clientProcess, currentTestIndexString):
@@ -137,7 +148,9 @@ def start_and_join_server(vuClientLaunch, vuServerLaunch, logFilePath, currentTe
                fileObject.write(currentTestIndexString + ": Client Crash\n")
                fileObject.close()
                if successTimer:
+                  print("Cancelling Success timer because client crashed.")
                   successTimer.cancel()
+               clientProcess.kill()
                serverProcess.kill()
                return
           
