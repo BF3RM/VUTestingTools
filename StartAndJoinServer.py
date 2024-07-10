@@ -22,7 +22,8 @@ class RMError(Enum):
 
 TIME_FOR_SERVER_LOG_TO_POP_UP = 3
 TIME_FOR_LOADING_INTO_NEXT_MAP = 30
-NUMBER_OF_TESTS = 3
+TIME_FOR_DRM_MODULE_ERROR = 3
+NUMBER_OF_TESTS = 1
 NUMBER_OF_TESTS_ZERO_INDEXED = NUMBER_OF_TESTS - 1
 
 
@@ -64,8 +65,21 @@ def safe_shutdown(fileObject, serverProcess, clientProcess, currentTestIndexStri
    clientProcess.kill()
    return
    
+def server_failed_to_start(fileObject, serverProcess, clientProcess, currentTestIndexString):
+      if currentTestIndexString == str(NUMBER_OF_TESTS_ZERO_INDEXED):
+         print(currentTestIndexString + ": DOES NOT COUNT. Server failed to start. Final test complete.\n")
+      else:
+         print(currentTestIndexString + ": DOES NOT COUNT. Server failed to start. Moving to next test iteration...\n")
+
+      fileObject.write(currentTestIndexString + ": DOES NOT COUNT. Server failed to start.\n")
+      fileObject.close()
+      serverProcess.kill()
+      clientProcess.kill()
+      return
 
 def start_and_join_server(vuClientLaunch, vuServerLaunch, logFilePath, currentTestIndexString):
+  print("-----------------------")
+  print("Starting test " + str(currentTestIndexString) + ":\n")
 
   fileObject = open(logFilePath, "a")
 
@@ -83,11 +97,20 @@ def start_and_join_server(vuClientLaunch, vuServerLaunch, logFilePath, currentTe
   print("Starting VU Client...")
   clientProcess = subprocess.Popen(vuClientLaunch)
 
+  # trying to catch the DRM Module fail
+  serverTimer = Timer(TIME_FOR_DRM_MODULE_ERROR, server_failed_to_start, args=(fileObject, serverProcess, clientProcess, currentTestIndexString))
+  serverTimer.start()
+
   # this loop only executes when something goes to StdOut
   while True:
       output = serverProcess.stdout.readline()
       if output == '' and serverProcess.poll() is not None:
           break
+
+      # if server is printing to stdOut, it's working fine
+      if serverTimer:
+         serverTimer.cancel()
+         serverTimer = False
 
       if secondRoundReady:
          if not successTimer:
@@ -130,7 +153,13 @@ def start_and_join_server(vuClientLaunch, vuServerLaunch, logFilePath, currentTe
                pyautogui.click(coordinates.x, coordinates.y, 1)
                firstLoad = False
             except: 
-               print("[Error]: pyautogui could not find soldier image! Take a screenshot at the resolution you are going to test with.")
+               print("[Error]: pyautogui could not find soldier image! Resolution wrong, or client failed to start for some reason.")
+               if currentTestIndexString == str(NUMBER_OF_TESTS_ZERO_INDEXED):
+                  print(currentTestIndexString + ": DOES NOT COUNT. Client never connected to server. Final test complete.\n")
+               else:
+                  print(currentTestIndexString + ": DOES NOT COUNT. Client never connected to server. Moving to next test iteration...\n")
+
+               fileObject.write(currentTestIndexString + ": DOES NOT COUNT. Client never connected to server.\n")
                fileObject.close()
                clientProcess.kill()
                serverProcess.kill()
