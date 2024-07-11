@@ -17,6 +17,9 @@ class RMError(Enum):
    ARTILLERY = "find custom instances for ArtilleryStrike"
    LADDER = "find cloned DLC Knife instance"
    MATERIAL = "to MaterialIndexMap, but it has already been added"
+   ERROR_HANDLING = "error in error handling"
+   ERROR = "Error"
+   error = "error"
    CLIENT_CRASH = "left the server"
 
 
@@ -157,6 +160,20 @@ def start_and_join_server(vuClientLaunch, vuServerLaunch, logFilePath, currentTe
           for item in RMError:
              if item.value in msg:
                 fileObject.write(currentTestIndexString + ": " + msg + "\n")
+                if RMError.CLIENT_CRASH.value in msg:
+                   if currentTestIndexString == str(NUMBER_OF_TESTS_ZERO_INDEXED):
+                        print(currentTestIndexString + ": Client Crashed on INITIAL JOIN. Final test complete.\n")
+                   else:
+                        print(currentTestIndexString + ": Client Crash. Moving to next test iteration...\n")
+
+                   fileObject.write(currentTestIndexString + ": Client Crashed on INITIAL JOIN.\n")
+                   fileObject.close()
+                   if successTimer:
+                     print("Cancelling Success timer because client crashed.")
+                     successTimer.cancel()
+                   clientProcess.kill()
+                   serverProcess.kill()
+                   return
           
           if firstLoad and serverReady:
             print("Loading is complete. Joining the game")
