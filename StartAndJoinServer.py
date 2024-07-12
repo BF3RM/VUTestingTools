@@ -195,6 +195,11 @@ def start_and_join_server(vuClientLaunch, vuServerLaunch, logFilePath, currentTe
                serverProcess.kill()
                return
 
+  print("Server crashed")
+  fileObject.write(currentTestIndexString + ": Server crashed.\n")
+  fileObject.close()
+  serverProcess.kill()
+  clientProcess.kill()
 def say_hello():
    print("hello")
 
